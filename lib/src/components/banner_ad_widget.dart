@@ -68,7 +68,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
       request: const AdRequest(),
       listener: BannerAdListener(
         onAdLoaded: (Ad ad) {
-          print('$ad loaded: ${ad.responseInfo}');
+          printDebug('$ad loaded: ${ad.responseInfo}');
           setState(() {
             // When the ad is loaded, get the ad size and use it to set
             // the height of the ad container.
@@ -76,7 +76,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
           });
         },
         onAdFailedToLoad: (Ad ad, LoadAdError error) {
-          print('Anchored adaptive banner failedToLoad: $error');
+          printDebug('Anchored adaptive banner failedToLoad: $error');
           ad.dispose();
         },
       ),

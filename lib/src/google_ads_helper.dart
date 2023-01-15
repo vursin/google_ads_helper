@@ -131,6 +131,8 @@ class GoogleAdsHelper with WidgetsBindingObserver {
     /// Show a dialog before showing the ATT
     ConsentSetting consentSetting = const ConsentSetting(),
   }) async {
+    if (!isSupportedPlatform) return;
+
     if (_isConfiged) return;
     _isConfiged = true;
 
@@ -175,6 +177,9 @@ class GoogleAdsHelper with WidgetsBindingObserver {
   }
 
   Future<bool> initial() async {
+    // Avoid useless await at the next line
+    if (!_isConfiged) return false;
+
     // Wait until config is called
     await _configCompleter.future;
 
@@ -273,7 +278,7 @@ class GoogleAdsHelper with WidgetsBindingObserver {
     if (Platform.isIOS && adUnitIOS == '') return null;
 
     // Do not show when `config` is not called
-    if (!_configCompleter.isCompleted) return null;
+    if (!(await initial())) return null;
 
     final currentOption = option ?? _rewardOption;
     _rewardCount++;
@@ -355,7 +360,7 @@ class GoogleAdsHelper with WidgetsBindingObserver {
     if (Platform.isIOS && adUnitIOS == '') return false;
 
     // Do not show when `config` is not called
-    if (!_configCompleter.isCompleted) return false;
+    if (!(await initial())) return false;
 
     final currentOption = option ?? _interstitialOption;
     _interstitialCount++;
