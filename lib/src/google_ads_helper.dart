@@ -47,6 +47,8 @@ class GoogleAdsHelper with WidgetsBindingObserver {
   /// You can use test device instead of test unit id.
   bool get isTestAd => _isTestAd;
 
+  bool _isDebugConsent = false;
+
   /// This value is `true` when config is completed
   final Completer _configCompleter = Completer<bool>();
 
@@ -106,6 +108,9 @@ class GoogleAdsHelper with WidgetsBindingObserver {
     /// You can use test device instead of test unit id.
     required isTestAd,
 
+    /// Force to show consent for debug
+    bool isDebugConsent = false,
+
     /// Control how to show the interstitial ads when using [showInterstitial]
     CallCountOption interstitialOption = const CallCountOption(
       firstCount: 1,
@@ -142,6 +147,7 @@ class GoogleAdsHelper with WidgetsBindingObserver {
     _forceShowAdVersions = forceShowAdVersions;
     _showAdVersions = showAdVersions;
     _isTestAd = isTestAd;
+    _isDebugConsent = isDebugConsent;
 
     _interstitialOption = interstitialOption;
     _interstitialCount = 0;
@@ -206,8 +212,11 @@ class GoogleAdsHelper with WidgetsBindingObserver {
     printDebug('Is allowed Ads: $_isAllowedAds');
     if (!_isAllowedAds) return false;
 
-    await loadConsent(isDebug: true);
-    await MobileAds.instance.initialize();
+    await loadConsent(isDebug: _isDebugConsent);
+    final status = await MobileAds.instance.initialize();
+    status.adapterStatuses.forEach((key, value) {
+      printDebug('Adapter status for $key: ${value.description}');
+    });
 
     printDebug('Appodeal has been initialized');
 
