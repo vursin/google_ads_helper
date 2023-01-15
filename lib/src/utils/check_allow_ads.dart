@@ -14,13 +14,13 @@ Future<bool> _checkAllowedAds() async {
 
   // Return false nếu phiên bản hiện tại không hỗ trợ Ads
   if (!isShowAd) {
-    _printDebug('Do not allow ads for this version');
+    printDebug('Do not allow ads for this version');
     return false;
   }
 
   // Return true nếu phiên bản hiện tại buộc hiển thị Ad
   if (forceShowAd) {
-    _printDebug('Force allow ads for this version');
+    printDebug('Force allow ads for this version');
     return true;
   }
 
@@ -40,7 +40,7 @@ Future<bool> _checkAllowedAds() async {
   if (checkAllowAdsOption.prefVersion != checkAllowAdsOption.appVersion) {
     checkAllowAdsOption.writePref(checkAllowAdsOption.appVersion, 1);
 
-    _printDebug(
+    printDebug(
       'Pref config do not allow showing Ad on this version: $checkAllowAdsOption',
     );
 
@@ -53,7 +53,7 @@ Future<bool> _checkAllowedAds() async {
     // Nếu cloud không cho hiện Ads thì không cho hiện Ads nhưng những bước
     // còn lại vẫn phải thực hiện.
     if (!checkAllowAdsOption.isShowAd) {
-      _printDebug('lastGuard do not allow showing Ad');
+      printDebug('lastGuard do not allow showing Ad');
       return false;
     }
 
@@ -65,7 +65,7 @@ Future<bool> _checkAllowedAds() async {
     count,
   );
 
-  _printDebug(
+  printDebug(
     'Pref config do not allow showing Ad on this version: $checkAllowAdsOption',
   );
 

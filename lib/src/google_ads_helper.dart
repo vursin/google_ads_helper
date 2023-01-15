@@ -20,8 +20,7 @@ import 'utils/test_ad_id.dart';
 part 'utils/check_allow_ads.dart';
 
 class GoogleAdsHelper with WidgetsBindingObserver {
-  static final _instance = GoogleAdsHelper._();
-  static GoogleAdsHelper get instance => _instance;
+  static final instance = GoogleAdsHelper._();
 
   GoogleAdsHelper._();
 
@@ -42,6 +41,11 @@ class GoogleAdsHelper with WidgetsBindingObserver {
 
   bool _isConfiged = false;
   bool _isInitialed = false;
+  bool _isTestAd = false;
+
+  /// Is using test ad. Sometimes this feature will cause the ad load failed issue
+  /// You can use test device instead of test unit id.
+  bool get isTestAd => _isTestAd;
 
   /// This value is `true` when config is completed
   final Completer _configCompleter = Completer<bool>();
@@ -98,6 +102,10 @@ class GoogleAdsHelper with WidgetsBindingObserver {
     /// Ex {">=1.0.0"}
     required Map<String, bool> showAdVersions,
 
+    /// Is using test ad. Sometimes this feature will cause the ad load failed issue
+    /// You can use test device instead of test unit id.
+    required isTestAd,
+
     /// Control how to show the interstitial ads when using [showInterstitial]
     CallCountOption interstitialOption = const CallCountOption(
       firstCount: 1,
@@ -131,6 +139,7 @@ class GoogleAdsHelper with WidgetsBindingObserver {
     _consentSetting = consentSetting;
     _forceShowAdVersions = forceShowAdVersions;
     _showAdVersions = showAdVersions;
+    _isTestAd = isTestAd;
 
     _interstitialOption = interstitialOption;
     _interstitialCount = 0;
@@ -143,7 +152,7 @@ class GoogleAdsHelper with WidgetsBindingObserver {
 
     switch (_consentSetting.showConfig) {
       case ShowConfig.whenNeeded:
-        _printDebug('Only show consent whenNeeded => false');
+        printDebug('Only show consent whenNeeded => false');
         break;
       case ShowConfig.whenConfig:
         await _showATT();
@@ -153,7 +162,7 @@ class GoogleAdsHelper with WidgetsBindingObserver {
           await _showATT();
           break;
         } else {
-          _printDebug(
+          printDebug(
               'Show consent is whenDefault but not IOS platform => false');
         }
         break;
@@ -171,7 +180,7 @@ class GoogleAdsHelper with WidgetsBindingObserver {
 
     // Return `false` if initilized and not allowed ads
     if (_isInitialed && !_isAllowedAds) {
-      _printDebug(
+      printDebug(
           'The plugin is initialized but the isAllowedAds is false => Disable Ads');
       await Future.delayed(const Duration(seconds: 2));
       return false;
@@ -179,7 +188,7 @@ class GoogleAdsHelper with WidgetsBindingObserver {
 
     // Return `true` if initialized and allowed ads but the `_initCompleter` is completed
     if (_isInitialed && _isAllowedAds && _initCompleter.isCompleted) {
-      _printDebug(
+      printDebug(
           'The plugin is initialized and the isAllowedAds is true => Enable Ads');
       await Future.delayed(const Duration(seconds: 2));
       return true;
@@ -189,13 +198,13 @@ class GoogleAdsHelper with WidgetsBindingObserver {
     // state can be changed
     _isInitialed = true;
 
-    _printDebug('Is allowed Ads: $_isAllowedAds');
+    printDebug('Is allowed Ads: $_isAllowedAds');
     if (!_isAllowedAds) return false;
 
     await loadConsent(isDebug: true);
     await MobileAds.instance.initialize();
 
-    _printDebug('Appodeal has been initialized');
+    printDebug('Appodeal has been initialized');
 
     _initCompleter.complete(true);
     return _initCompleter.future;
@@ -227,7 +236,7 @@ class GoogleAdsHelper with WidgetsBindingObserver {
 
   Future<void> _showDialog() async {
     if (_consentSetting.context != null) {
-      _printDebug('Show consent dialog');
+      printDebug('Show consent dialog');
       await boxDialog(
         context: _consentSetting.context!,
         barrierDismissible: false,
@@ -263,10 +272,13 @@ class GoogleAdsHelper with WidgetsBindingObserver {
     if (Platform.isAndroid && adUnitAndroid == '') return null;
     if (Platform.isIOS && adUnitIOS == '') return null;
 
+    // Do not show when `config` is not called
+    if (!_configCompleter.isCompleted) return null;
+
     final currentOption = option ?? _rewardOption;
     _rewardCount++;
 
-    _printDebug(
+    printDebug(
         'showRewardVideo: currentCount = $_rewardCount, option = $currentOption');
 
     if (_rewardCount >= currentOption.firstCount) {
@@ -278,7 +290,7 @@ class GoogleAdsHelper with WidgetsBindingObserver {
         _rewardCount = -100000;
       }
 
-      _printDebug('showRewardVideo: show');
+      printDebug('showRewardVideo: show');
       return _showRewarded(adUnitAndroid: adUnitAndroid, adUnitIOS: adUnitIOS);
     }
 
@@ -295,11 +307,11 @@ class GoogleAdsHelper with WidgetsBindingObserver {
     Completer<RewardItem?> completer = Completer();
 
     RewardedAd.load(
-      adUnitId: kReleaseMode
-          ? Platform.isAndroid
+      adUnitId: !kReleaseMode && isTestAd
+          ? TestAdIds.ids.rewarded
+          : Platform.isAndroid
               ? adUnitAndroid
-              : adUnitIOS
-          : TestAdIds.ids.banner,
+              : adUnitIOS,
       request: const AdRequest(),
       rewardedAdLoadCallback: RewardedAdLoadCallback(
         onAdLoaded: (RewardedAd ad) {
@@ -342,10 +354,13 @@ class GoogleAdsHelper with WidgetsBindingObserver {
     if (Platform.isAndroid && adUnitAndroid == '') return false;
     if (Platform.isIOS && adUnitIOS == '') return false;
 
+    // Do not show when `config` is not called
+    if (!_configCompleter.isCompleted) return false;
+
     final currentOption = option ?? _interstitialOption;
     _interstitialCount++;
 
-    _printDebug(
+    printDebug(
         'showInterstitial: currentCount = $_interstitialCount, option = $currentOption');
 
     if (_interstitialCount >= currentOption.firstCount) {
@@ -358,7 +373,7 @@ class GoogleAdsHelper with WidgetsBindingObserver {
         _interstitialCount = -100000;
       }
 
-      _printDebug('showInterstitial: show');
+      printDebug('showInterstitial: show');
       return _showInterstitial(
         adUnitAndroid: adUnitAndroid,
         adUnitIOS: adUnitIOS,
@@ -375,11 +390,11 @@ class GoogleAdsHelper with WidgetsBindingObserver {
     Completer<bool> completer = Completer();
 
     InterstitialAd.load(
-      adUnitId: kReleaseMode
-          ? Platform.isAndroid
+      adUnitId: !kReleaseMode && isTestAd
+          ? TestAdIds.ids.interstitial
+          : Platform.isAndroid
               ? adUnitAndroid
-              : adUnitIOS
-          : TestAdIds.ids.banner,
+              : adUnitIOS,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (InterstitialAd ad) {
@@ -439,7 +454,7 @@ class GoogleAdsHelper with WidgetsBindingObserver {
   }
 }
 
-_printDebug(Object? object) => GoogleAdsHelper.instance._debugLog
+printDebug(Object? object) => GoogleAdsHelper.instance._debugLog
     // ignore: avoid_print
-    ? debugPrint('[GoogleAds Helper]: $object')
+    ? print('[GoogleAds Helper]: $object')
     : null;

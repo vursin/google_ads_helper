@@ -56,12 +56,14 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
       }
     }
 
+    final bannerId = !kReleaseMode && GoogleAdsHelper.instance.isTestAd
+        ? TestAdIds.ids.banner
+        : Platform.isAndroid
+            ? widget.adUnitAndroid
+            : widget.adUnitIOS;
+    printDebug('Banner id = $bannerAd');
     bannerAd = BannerAd(
-      adUnitId: kReleaseMode
-          ? Platform.isAndroid
-              ? widget.adUnitAndroid
-              : widget.adUnitIOS
-          : TestAdIds.ids.banner,
+      adUnitId: bannerId,
       size: size,
       request: const AdRequest(),
       listener: BannerAdListener(
