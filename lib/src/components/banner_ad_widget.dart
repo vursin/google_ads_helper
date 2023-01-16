@@ -46,12 +46,10 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
       return;
     }
 
-    print('>> ok');
-
-    AdSize size = AdSize.banner;
+    AdSize? size = widget.adSize;
 
     // Try to get the current width
-    if (widget.adSize == null && mounted) {
+    if (size == null && mounted) {
       // Get an AnchoredAdaptiveBannerAdSize before loading the ad.
       final AnchoredAdaptiveBannerAdSize? tempSize =
           await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(
@@ -61,6 +59,9 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
         size = tempSize;
       }
     }
+
+    /// Banner size is default
+    size ??= AdSize.banner;
 
     final bannerId = !kReleaseMode && GoogleAdsHelper.instance.isTestAd
         ? TestAdIds.ids.banner
