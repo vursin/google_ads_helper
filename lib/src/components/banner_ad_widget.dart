@@ -23,14 +23,15 @@ class BannerAdWidget extends StatefulWidget {
 
 class _BannerAdWidgetState extends State<BannerAdWidget> {
   BannerAd? bannerAd;
+  bool _isLoaded = false;
 
   @override
-  void initState() {
-    super.initState();
-
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+  void didChangeDependencies() {
+    if (!_isLoaded) {
+      _isLoaded = true;
       _loadAd();
-    });
+    }
+    super.didChangeDependencies();
   }
 
   @override
@@ -40,12 +41,17 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   }
 
   Future<void> _loadAd() async {
-    if (!(await GoogleAdsHelper.instance.initial())) return;
+    if (!await GoogleAdsHelper.instance.initial()) {
+      printDebug('initial return false => do not show ad');
+      return;
+    }
+
+    print('>> ok');
 
     AdSize size = AdSize.banner;
 
     // Try to get the current width
-    if (widget.adSize == null) {
+    if (widget.adSize == null && mounted) {
       // Get an AnchoredAdaptiveBannerAdSize before loading the ad.
       final AnchoredAdaptiveBannerAdSize? tempSize =
           await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(
@@ -69,11 +75,12 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
       listener: BannerAdListener(
         onAdLoaded: (Ad ad) {
           printDebug('$ad loaded: ${ad.responseInfo}');
-          setState(() {
-            // When the ad is loaded, get the ad size and use it to set
-            // the height of the ad container.
-            bannerAd = ad as BannerAd;
-          });
+
+          if (mounted) {
+            setState(() {});
+          } else {
+            ad.dispose();
+          }
         },
         onAdFailedToLoad: (Ad ad, LoadAdError error) {
           printDebug('Anchored adaptive banner failedToLoad: $error');
@@ -92,6 +99,6 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
             width: bannerAd!.size.width.toDouble(),
             height: bannerAd!.size.height.toDouble(),
             child: AdWidget(ad: bannerAd!))
-        : const SizedBox();
+        : const SizedBox.shrink();
   }
 }
