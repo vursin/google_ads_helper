@@ -19,7 +19,7 @@ import 'utils/test_ad_id.dart';
 
 part 'utils/check_allow_ads.dart';
 
-class GoogleAdsHelper with WidgetsBindingObserver {
+class GoogleAdsHelper {
   static final instance = GoogleAdsHelper._();
 
   GoogleAdsHelper._();
@@ -86,9 +86,6 @@ class GoogleAdsHelper with WidgetsBindingObserver {
   ///
   /// [allowAdsAfterAppOpenCount] Allow the app to show ads after this opening times
   ///
-  /// [checkAllowedAdsWhenResume] The `isAllowedAds` will be re-checked when
-  /// the app is resumed instead of just checking when re-open the app.
-  ///
   /// [debugLog] show verbose debug log if `true`. Default value is `false`.
   ///
   /// [consentSetting] Show a dialog before showing the ATT
@@ -126,10 +123,6 @@ class GoogleAdsHelper with WidgetsBindingObserver {
     /// Allow the app to show ads after this opening times
     int allowAdsAfterAppOpenCount = 3,
 
-    /// The `isAllowedAds` will be re-checked when
-    /// the app is resumed instead of just checking when re-open the app
-    bool checkAllowedAdsWhenResume = true,
-
     /// show verbose debug log if `true`. Default value is `false`.
     bool debugLog = false,
 
@@ -159,9 +152,6 @@ class GoogleAdsHelper with WidgetsBindingObserver {
       printDebug('The current platform is not supported');
       return;
     }
-
-    // Add observer
-    WidgetsBinding.instance.addObserver(this);
 
     switch (_consentSetting.showConfig) {
       case ShowConfig.whenNeeded:
@@ -195,16 +185,14 @@ class GoogleAdsHelper with WidgetsBindingObserver {
     if (_isInitialed && !_isAllowedAds) {
       printDebug(
           'The plugin is initialized but the isAllowedAds is false => Disable Ads');
-      await Future.delayed(const Duration(seconds: 2));
       return false;
     }
 
     // Return `true` if initialized and allowed ads but the `_initCompleter` is completed
-    if (_isInitialed && _isAllowedAds && _initCompleter.isCompleted) {
+    if (_isInitialed && _isAllowedAds) {
       printDebug(
           'The plugin is initialized and the isAllowedAds is true => Enable Ads');
-      await Future.delayed(const Duration(seconds: 2));
-      return true;
+      return _initCompleter.future;
     }
 
     // Recheck the ads state even when `_isInitialed` is true because the `isAllowedAds`
@@ -228,9 +216,6 @@ class GoogleAdsHelper with WidgetsBindingObserver {
 
   /// Destroy all Appodeal Ads. Default is to destroy all Appodeal ads.
   Future<void> dispose() async {
-    // Remove observer
-    if (isSupportedPlatform) WidgetsBinding.instance.addObserver(this);
-
     // Không triển khai ad ở ngoài 2 platform này hoặc không hỗ trợ Ads
     if (!isSupportedPlatform || !_isAllowedAds) return;
 
@@ -441,33 +426,6 @@ class GoogleAdsHelper with WidgetsBindingObserver {
 
   /// Increase the counter manually
   void increaseInterstitialCounter() => _interstitialCount++;
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    switch (state) {
-      case AppLifecycleState.resumed:
-        break;
-      case AppLifecycleState.inactive:
-        break;
-      case AppLifecycleState.paused:
-        // TODO: Add the flag to know when the app is paused by user or by ads before implement this feature.
-        // If not it may make the app repeat the ads everytime the ads is shown.
-
-        // if (_interstitialOption.repeatCount == 0) {
-        //   _interstitialCount = 0;
-        // }
-        // if (_rewardOption.repeatCount == 0) {
-        //   _rewardCount = 0;
-        // }
-        // if (_checkAllowedAdsWhenResume) {
-        //   _checkAllowedAds().then((value) => _isAllowedAds = value);
-        // }
-        break;
-      case AppLifecycleState.detached:
-        break;
-    }
-    super.didChangeAppLifecycleState(state);
-  }
 }
 
 printDebug(Object? object) => GoogleAdsHelper.instance._debugLog
