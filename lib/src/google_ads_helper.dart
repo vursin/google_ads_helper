@@ -136,12 +136,6 @@ class GoogleAdsHelper with WidgetsBindingObserver {
     /// Show a dialog before showing the ATT
     ConsentSetting consentSetting = const ConsentSetting(),
   }) async {
-    if (!isSupportedPlatform) {
-      _configCompleter.complete(false);
-      printDebug('The current platform is not supported');
-      return;
-    }
-
     if (_isConfiged) return;
     _isConfiged = true;
 
@@ -158,6 +152,13 @@ class GoogleAdsHelper with WidgetsBindingObserver {
 
     _rewardOption = rewardOption;
     _rewardCount = 0;
+
+    if (!isSupportedPlatform) {
+      _isAllowedAds = false;
+      _configCompleter.complete(false);
+      printDebug('The current platform is not supported');
+      return;
+    }
 
     // Add observer
     WidgetsBinding.instance.addObserver(this);
