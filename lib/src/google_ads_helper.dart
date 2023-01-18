@@ -5,6 +5,7 @@ import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:box_widgets/box_widgets.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_ads_helper/src/models/allowed_platform.dart';
 import 'package:google_ads_helper/src/utils/load_consent.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -90,6 +91,13 @@ class GoogleAdsHelper {
   ///
   /// [consentSetting] Show a dialog before showing the ATT
   Future<void> config({
+    /// To avoid running ads config on unused Platform
+    ///
+    /// [AllowedPlatform.both]    : On both platforms
+    /// [AllowedPlatform.android] : Android only
+    /// [AllowedPlatform.ios]     : IOS only
+    required AllowedPlatform allowedPlatform,
+
     /// Versions to force show ad, it will ignore [allowAdsAfterAppOpenCount].
     ///
     /// Ex: {"<=2.0.0"}
@@ -150,6 +158,21 @@ class GoogleAdsHelper {
       _isAllowedAds = false;
       _configCompleter.complete(false);
       printDebug('The current platform is not supported');
+      return;
+    }
+
+    if (allowedPlatform == AllowedPlatform.ios && !UniversalPlatform.isIOS) {
+      _isAllowedAds = false;
+      _configCompleter.complete(false);
+      printDebug('The ads only available on IOS');
+      return;
+    }
+
+    if (allowedPlatform == AllowedPlatform.android &&
+        UniversalPlatform.isAndroid) {
+      _isAllowedAds = false;
+      _configCompleter.complete(false);
+      printDebug('The ads only available on Android');
       return;
     }
 
