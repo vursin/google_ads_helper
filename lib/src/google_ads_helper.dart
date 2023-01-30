@@ -169,7 +169,7 @@ class GoogleAdsHelper {
     }
 
     if (allowedPlatform == AllowedPlatform.android &&
-        UniversalPlatform.isAndroid) {
+        !UniversalPlatform.isAndroid) {
       _isAllowedAds = false;
       _configCompleter.complete(false);
       printDebug('The ads only available on Android');
