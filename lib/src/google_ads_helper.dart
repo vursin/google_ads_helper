@@ -74,7 +74,7 @@ class GoogleAdsHelper {
   /// Counter for the reward ads
   int _rewardCount = 0;
 
-  /// Configure for appodeal helper
+  /// Configure for google ads helper
   ///
   /// [forceShowAdVersions] A map of conditions that forcing to show Ads.
   /// `{"<2.0.0":false}`
@@ -231,13 +231,13 @@ class GoogleAdsHelper {
       printDebug('Adapter status for $key: ${value.description}');
     });
 
-    printDebug('Appodeal has been initialized');
+    printDebug('Google ads has been initialized');
 
     _initCompleter.complete(true);
     return _initCompleter.future;
   }
 
-  /// Destroy all Appodeal Ads. Default is to destroy all Appodeal ads.
+  /// Destroy all Google ads Ads. Default is to destroy all Google ads ads.
   Future<void> dispose() async {
     // Không triển khai ad ở ngoài 2 platform này hoặc không hỗ trợ Ads
     if (!isSupportedPlatform || !_isAllowedAds) return;
@@ -286,7 +286,6 @@ class GoogleAdsHelper {
     }
   }
 
-  /// Show rewarded ad = [showAd(AppodealAdType.RewardedVideo)]
   Future<RewardItem?> showRewardedVideo({
     required String adUnitAndroid,
     required String adUnitIOS,
@@ -366,7 +365,7 @@ class GoogleAdsHelper {
     return completer.future;
   }
 
-  /// Show interstitial ad = [showAd(AppodealAdType.Interstitial)]
+  /// Show interstitial
   ///
   /// Use default option in `initial` if [option] is null
   Future<bool> showInterstitial({
