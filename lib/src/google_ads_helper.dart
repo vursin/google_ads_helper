@@ -30,8 +30,7 @@ class GoogleAdsHelper {
   bool _isAllowedAds = false;
 
   /// Return true if current platform is Android or iOS and false otherwise.
-  final isSupportedPlatform =
-      UniversalPlatform.isAndroid || UniversalPlatform.isIOS;
+  final isSupportedPlatform = UniversalPlatform.isAndroid || UniversalPlatform.isIOS;
 
   Map<String, bool> _forceShowAdVersions = {};
   Map<String, bool> _showAdVersions = {};
@@ -91,7 +90,7 @@ class GoogleAdsHelper {
   ///
   /// [consentSetting] Show a dialog before showing the ATT
   Future<void> config({
-    /// To avoid running ads config on unused Platform
+    /// To avoid running ads config on unused UniversalPlatform
     ///
     /// [AllowedPlatform.both]    : On both platforms
     /// [AllowedPlatform.android] : Android only
@@ -168,8 +167,7 @@ class GoogleAdsHelper {
       return;
     }
 
-    if (allowedPlatform == AllowedPlatform.android &&
-        !UniversalPlatform.isAndroid) {
+    if (allowedPlatform == AllowedPlatform.android && !UniversalPlatform.isAndroid) {
       _isAllowedAds = false;
       _configCompleter.complete(false);
       printDebug('The ads only available on Android');
@@ -188,8 +186,7 @@ class GoogleAdsHelper {
           await _showATT();
           break;
         } else {
-          printDebug(
-              'Show consent is whenDefault but not IOS platform => false');
+          printDebug('Show consent is whenDefault but not IOS platform => false');
         }
         break;
     }
@@ -206,15 +203,13 @@ class GoogleAdsHelper {
 
     // Return `false` if initilized and not allowed ads
     if (_isInitialed && !_isAllowedAds) {
-      printDebug(
-          'The plugin is initialized but the isAllowedAds is false => Disable Ads');
+      printDebug('The plugin is initialized but the isAllowedAds is false => Disable Ads');
       return false;
     }
 
     // Return `true` if initialized and allowed ads but the `_initCompleter` is completed
     if (_isInitialed && _isAllowedAds) {
-      printDebug(
-          'The plugin is initialized and the isAllowedAds is true => Enable Ads');
+      printDebug('The plugin is initialized and the isAllowedAds is true => Enable Ads');
       return _initCompleter.future;
     }
 
@@ -247,8 +242,7 @@ class GoogleAdsHelper {
 
   Future<void> _showATT() async {
     // If the system can show an authorization request dialog
-    if (await AppTrackingTransparency.trackingAuthorizationStatus ==
-        TrackingStatus.notDetermined) {
+    if (await AppTrackingTransparency.trackingAuthorizationStatus == TrackingStatus.notDetermined) {
       // Show a custom explainer dialog before the system dialog
       await _showDialog();
       // Wait for dialog popping animation
@@ -292,8 +286,8 @@ class GoogleAdsHelper {
     CallCountOption? option,
   }) async {
     // Do not show when adUnit is empty
-    if (Platform.isAndroid && adUnitAndroid == '') return null;
-    if (Platform.isIOS && adUnitIOS == '') return null;
+    if (UniversalPlatform.isAndroid && adUnitAndroid == '') return null;
+    if (UniversalPlatform.isIOS && adUnitIOS == '') return null;
 
     // Do not show when `config` is not called
     if (!(await initial())) return null;
@@ -301,8 +295,7 @@ class GoogleAdsHelper {
     final currentOption = option ?? _rewardOption;
     _rewardCount++;
 
-    printDebug(
-        'showRewardVideo: currentCount = $_rewardCount, option = $currentOption');
+    printDebug('showRewardVideo: currentCount = $_rewardCount, option = $currentOption');
 
     if (_rewardCount >= currentOption.firstCount) {
       // Only reset the counter when [isAllowRepest] is true
@@ -332,7 +325,7 @@ class GoogleAdsHelper {
     RewardedAd.load(
       adUnitId: !kReleaseMode && isTestAd
           ? TestAdIds.ids.rewarded
-          : Platform.isAndroid
+          : UniversalPlatform.isAndroid
               ? adUnitAndroid
               : adUnitIOS,
       request: const AdRequest(),
@@ -351,8 +344,7 @@ class GoogleAdsHelper {
             },
           );
 
-          ad.show(
-              onUserEarnedReward: (AdWithoutView ad, RewardItem rewardItem) {
+          ad.show(onUserEarnedReward: (AdWithoutView ad, RewardItem rewardItem) {
             completer.complete(rewardItem);
           });
         },
@@ -374,8 +366,8 @@ class GoogleAdsHelper {
     CallCountOption? option,
   }) async {
     // Do not show when adUnit is empty
-    if (Platform.isAndroid && adUnitAndroid == '') return false;
-    if (Platform.isIOS && adUnitIOS == '') return false;
+    if (UniversalPlatform.isAndroid && adUnitAndroid == '') return false;
+    if (UniversalPlatform.isIOS && adUnitIOS == '') return false;
 
     // Do not show when `config` is not called
     if (!(await initial())) return false;
@@ -383,14 +375,12 @@ class GoogleAdsHelper {
     final currentOption = option ?? _interstitialOption;
     _interstitialCount++;
 
-    printDebug(
-        'showInterstitial: currentCount = $_interstitialCount, option = $currentOption');
+    printDebug('showInterstitial: currentCount = $_interstitialCount, option = $currentOption');
 
     if (_interstitialCount >= currentOption.firstCount) {
       // Only reset the counter when [isAllowRepest] is true
       if (currentOption.repeatCount > 0) {
-        _interstitialCount =
-            currentOption.firstCount - currentOption.repeatCount;
+        _interstitialCount = currentOption.firstCount - currentOption.repeatCount;
       } else {
         // TODO: Xử lý lại -100000 này, vì số sẽ liên tục tăng lên nên lấy số này để đại diện cho ko lặp lại Ad
         _interstitialCount = -100000;
@@ -415,7 +405,7 @@ class GoogleAdsHelper {
     InterstitialAd.load(
       adUnitId: !kReleaseMode && isTestAd
           ? TestAdIds.ids.interstitial
-          : Platform.isAndroid
+          : UniversalPlatform.isAndroid
               ? adUnitAndroid
               : adUnitIOS,
       request: const AdRequest(),
@@ -427,8 +417,7 @@ class GoogleAdsHelper {
 
               completer.complete(true);
             },
-            onAdFailedToShowFullScreenContent:
-                (InterstitialAd ad, AdError error) {
+            onAdFailedToShowFullScreenContent: (InterstitialAd ad, AdError error) {
               ad.dispose();
 
               completer.complete(false);
