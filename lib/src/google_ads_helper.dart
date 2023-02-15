@@ -5,6 +5,7 @@ import 'package:box_widgets/box_widgets.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_ads_helper/src/models/allowed_platform.dart';
+import 'package:google_ads_helper/src/models/dispose_ad.dart';
 import 'package:google_ads_helper/src/utils/load_consent.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -242,6 +243,10 @@ class GoogleAdsHelper {
     if (!isSupportedPlatform || !_isAllowedAds) return;
 
     _isAllowedAds = false;
+
+    for (final disposeAd in DisposeAd.list) {
+      disposeAd.disposeAd();
+    }
   }
 
   Future<void> _showATT() async {

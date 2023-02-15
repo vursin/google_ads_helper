@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_ads_helper/google_ads_helper.dart';
+import 'package:google_ads_helper/src/models/dispose_ad.dart';
 import 'package:google_ads_helper/src/utils/test_ad_id.dart';
 
 class BannerAdWidget extends StatefulWidget {
@@ -22,9 +23,15 @@ class BannerAdWidget extends StatefulWidget {
   State<BannerAdWidget> createState() => _BannerAdWidgetState();
 }
 
-class _BannerAdWidgetState extends State<BannerAdWidget> {
+class _BannerAdWidgetState extends State<BannerAdWidget> with DisposeAd {
   BannerAd? bannerAd;
   bool _isLoaded = false;
+
+  @override
+  void initState() {
+    disposeAdInit();
+    super.initState();
+  }
 
   @override
   void didChangeDependencies() {
@@ -38,7 +45,20 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   @override
   void dispose() {
     bannerAd?.dispose();
+    bannerAd = null;
+    disposeAdDispose();
     super.dispose();
+  }
+
+  @override
+  disposeAd() {
+    bannerAd?.dispose();
+
+    if (mounted) {
+      setState(() {
+        bannerAd = null;
+      });
+    }
   }
 
   Future<void> _loadAd() async {
@@ -105,6 +125,8 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
       if (await completer.future) {
         printDebug('Banner ad loaded with id: $id');
         break;
+      } else {
+        bannerAd = null;
       }
     }
 
