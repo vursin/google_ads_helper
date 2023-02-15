@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -9,12 +10,12 @@ class BannerAdWidget extends StatefulWidget {
   const BannerAdWidget({
     super.key,
     this.adSize,
-    required this.adUnitAndroid,
-    required this.adUnitIOS,
+    required this.adUnitAndroids,
+    required this.adUnitIOSs,
   });
 
-  final String adUnitAndroid;
-  final String adUnitIOS;
+  final List<String> adUnitAndroids;
+  final List<String> adUnitIOSs;
   final AdSize? adSize;
 
   @override
@@ -63,33 +64,51 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
     /// Banner size is default
     size ??= AdSize.banner;
 
-    final bannerId = !kReleaseMode && GoogleAdsHelper.instance.isTestAd
-        ? TestAdIds.ids.banner
+    final bannerIds = !kReleaseMode && GoogleAdsHelper.instance.isTestAd
+        ? [TestAdIds.ids.banner]
         : Platform.isAndroid
-            ? widget.adUnitAndroid
-            : widget.adUnitIOS;
-    printDebug('Banner id = $bannerAd');
-    bannerAd = BannerAd(
-      adUnitId: bannerId,
-      size: size,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (Ad ad) {
-          printDebug('$ad loaded: ${ad.responseInfo}');
+            ? widget.adUnitAndroids
+            : widget.adUnitIOSs;
 
-          if (mounted) {
-            setState(() {});
-          } else {
+    if (bannerIds.isEmpty) return;
+
+    for (final id in bannerIds) {
+      Completer completer = Completer<bool>();
+
+      bannerAd = BannerAd(
+        adUnitId: id,
+        size: size,
+        request: const AdRequest(),
+        listener: BannerAdListener(
+          onAdLoaded: (Ad ad) {
+            printDebug('$ad loaded: ${ad.responseInfo}');
+
+            if (mounted) {
+              setState(() {});
+            } else {
+              ad.dispose();
+            }
+
+            completer.complete(true);
+          },
+          onAdFailedToLoad: (Ad ad, LoadAdError error) {
+            printDebug('Banner Ad failedToLoad: $error');
             ad.dispose();
-          }
-        },
-        onAdFailedToLoad: (Ad ad, LoadAdError error) {
-          printDebug('Anchored adaptive banner failedToLoad: $error');
-          ad.dispose();
-        },
-      ),
-    );
-    return bannerAd?.load();
+
+            completer.complete(false);
+          },
+        ),
+      );
+
+      bannerAd?.load();
+
+      if (await completer.future) {
+        printDebug('Banner ad loaded with id: $id');
+        break;
+      }
+    }
+
+    printDebug('Banner id = $bannerAd');
   }
 
   @override
