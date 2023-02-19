@@ -60,19 +60,29 @@ class GoogleAdsHelper {
   CallCountOption _interstitialOption = const CallCountOption(
     firstCount: 1,
     repeatCount: 1,
+    maxFailedLoadAttempts: 3,
+    delayBetweenFailedLoadMilisecconds: 5000,
   );
 
   /// Counter for the intersitital ads
   int _interstitialCount = 0;
 
+  InterstitialAd? _interstitialAd;
+  int _numInterstitialLoadAttempts = 0;
+
   /// For reward ads
   CallCountOption _rewardOption = const CallCountOption(
     firstCount: 1,
     repeatCount: 1,
+    maxFailedLoadAttempts: 3,
+    delayBetweenFailedLoadMilisecconds: 5000,
   );
 
   /// Counter for the reward ads
   int _rewardCount = 0;
+
+  RewardedAd? _rewardedAd;
+  final int _numRewardedLoadAttempts = 0;
 
   /// Configure for google ads helper
   ///
@@ -120,12 +130,16 @@ class GoogleAdsHelper {
     CallCountOption interstitialOption = const CallCountOption(
       firstCount: 1,
       repeatCount: 1,
+      maxFailedLoadAttempts: 3,
+      delayBetweenFailedLoadMilisecconds: 5000,
     ),
 
     /// Control how to show the interstitial ads when using [showRewardedVideo]
     CallCountOption rewardOption = const CallCountOption(
       firstCount: 1,
       repeatCount: 1,
+      maxFailedLoadAttempts: 3,
+      delayBetweenFailedLoadMilisecconds: 5000,
     ),
 
     /// Allow the app to show ads after this opening times
@@ -404,16 +418,10 @@ class GoogleAdsHelper {
       final ids = UniversalPlatform.isAndroid ? adUnitAndroids : adUnitIOSs;
 
       // Try to load the ad unit from `ids`
-      bool result = false;
-      for (final id in ids) {
-        printDebug('Try to show ad unit id: $id');
-        result = await _showInterstitial(adUnitId: id);
-
-        if (result) {
-          printDebug('Success to show ad unit id: $id');
-          break;
-        }
-      }
+      //
+      // With this case, it will try to reload the ad unit from the top to
+      // the bottom of the list.
+      bool result = await _showInterstitial(adUnitId: ids);
 
       return result;
     }
@@ -424,39 +432,97 @@ class GoogleAdsHelper {
   /// Return true if the the ad can be loaded, false otherwise. It will return
   /// true even if the ad is failed to show.
   Future<bool> _showInterstitial({
-    required String adUnitId,
+    required List<String> adUnitId,
   }) async {
     Completer<bool> completer = Completer();
 
+    // Nếu ad chưa được preload và không thể preload thì thoát
+    if ((_interstitialAd == null) &&
+        !(await _loadMultipleInterstitial(adUnitId))) {
+      printDebug('Cannot load the ad: $adUnitId');
+      return false;
+    }
+
+    _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+      onAdDismissedFullScreenContent: (InterstitialAd ad) async {
+        ad.dispose();
+        completer.complete(true);
+      },
+      onAdFailedToShowFullScreenContent:
+          (InterstitialAd ad, AdError error) async {
+        ad.dispose();
+        completer.complete(true);
+      },
+    );
+
+    // Reload the ad for the next time.
+    //
+    // In this case, the ad will reload the current availabl
+    completer.future.then((value) {
+      _interstitialAd = null;
+      _loadMultipleInterstitial(adUnitId);
+    });
+
+    return completer.future;
+  }
+
+  Future<bool> _loadMultipleInterstitial(List<String> adUnitIds) async {
+    bool result = false;
+    for (final id in adUnitIds) {
+      printDebug('Try to show ad unit id: $id');
+      result = await _loadInterstitial(id);
+
+      if (result) {
+        printDebug('Success to load ad unit id: $id');
+        break;
+      }
+    }
+
+    return result;
+  }
+
+  Future<bool> _loadInterstitial(String adUnitId) async {
+    Completer<InterstitialAd?> completer = Completer();
     InterstitialAd.load(
       adUnitId:
           !kReleaseMode && isTestAd ? TestAdIds.ids.interstitial : adUnitId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (InterstitialAd ad) async {
-          ad.fullScreenContentCallback = FullScreenContentCallback(
-            onAdDismissedFullScreenContent: (InterstitialAd ad) {
-              ad.dispose();
-
-              completer.complete(true);
-            },
-            onAdFailedToShowFullScreenContent:
-                (InterstitialAd ad, AdError error) {
-              ad.dispose();
-
-              completer.complete(true);
-            },
-          );
-
-          ad.show();
+          completer.complete(ad);
         },
         onAdFailedToLoad: (LoadAdError error) {
-          completer.complete(false);
+          completer.complete(null);
         },
       ),
     );
 
-    return completer.future;
+    // Chủ động preload lại ad nếu có thể (trong giới hạn cho phép)
+    final ad = await completer.future;
+    if (ad == null) {
+      _numInterstitialLoadAttempts += 1;
+
+      if (_numInterstitialLoadAttempts <
+          _interstitialOption.maxFailedLoadAttempts) {
+        printDebug('Try to reload the ad unit: $adUnitId');
+        await Future.delayed(Duration(
+          milliseconds: _interstitialOption.delayBetweenFailedLoadMilisecconds,
+        ));
+        return _loadInterstitial(adUnitId);
+      } else {
+        printDebug('Cannot load ad unit: $adUnitId');
+        return false;
+      }
+    }
+
+    printDebug('Loaded ad: $adUnitId');
+
+    // Trả về ad nếu đã load được
+    _numInterstitialLoadAttempts = 0;
+
+    // Gắn Ad vào biến
+    _interstitialAd = ad..setImmersiveMode(true);
+    return true;
   }
 
   /// Increase the counter manually
